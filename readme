@@ -43,7 +43,11 @@ Welcome to the **File Upload & Management System**, a secure and user-friendly w
 ### Steps
 1. **Clone the Repository**
    ```bash
+<<<<<<< HEAD
    git clone https://github.com/itsRajneesh/FileDrive?tab=readme-ov-file
+=======
+   git clone https://github.com/itsRajneesh/FileDrive
+>>>>>>> a81349e (Update readme And Add Multiple File Select Feature)
    cd file-manager-app
 
 pip install -r requirements.txt
