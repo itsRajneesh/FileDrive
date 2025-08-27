@@ -43,7 +43,7 @@ Welcome to the **File Upload & Management System**, a secure and user-friendly w
 ### Steps
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/tera-username/file-manager-app.git
+   git clone https://github.com/itsRajneesh/FileDrive?tab=readme-ov-file
    cd file-manager-app
 
 pip install -r requirements.txt
