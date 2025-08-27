@@ -1,0 +1,106 @@
+# File Upload & Management System
+
+Welcome to the **File Upload & Management System**, a secure and user-friendly web application built with Flask to manage file uploads, downloads, and user authentication. This app allows users to sign up, log in, upload files (images/PDFs), search, download, and delete files, with features like email-based password reset and file categorization.
+
+## Table of Contents
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Deployment](#deployment)
+- [Environment Variables](#environment-variables)
+- [File Structure](#file-structure)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
+## Features
+- **User Authentication**: Secure signup and login with password hashing.
+- **File Management**: Upload, download, delete, and search files (supports images and PDFs).
+- **File Details**: Track file size, type, upload date (IST), and download count.
+- **Password Reset**: Forgot password with 6-digit OTP sent via email (valid for 5 minutes).
+- **Responsive Design**: Basic Bootstrap-based UI (can be enhanced).
+- **Security**: Session management, email validation, and MongoDB integration.
+
+## Tech Stack
+- **Backend**: Flask (Python)
+- **Database**: MongoDB (Atlas)
+- **Forms**: Flask-WTF
+- **File Handling**: Flask-Uploads
+- **Email**: Flask-Mail (Gmail SMTP)
+- **Dependencies**: PyMongo, Bcrypt, Pytz, Werkzeug, UUID
+- **Frontend**: HTML, Bootstrap 5
+- **Deployment**: Render.com
+
+## Installation
+
+### Prerequisites
+- Python 3.6+
+- Git
+- MongoDB Atlas account
+- Gmail account (for OTP emails)
+
+### Steps
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/tera-username/file-manager-app.git
+   cd file-manager-app
+
+pip install -r requirements.txt
+
+.env(DB_USER=your_mongodb_username
+DB_PASS=your_mongodb_password
+DB_CLUSTER=your_cluster.mongodb.net
+DB_NAME=file_manager_db
+SECRET_KEY=your_secret_key
+EMAIL_USER=your_gmail@gmail.com
+EMAIL_PASS=your_app_specific_password)
+
+python app.py //Open http://localhost:5000 in your browser.
+
+Usage
+Signup: Visit /signup to create an account.
+Login: Use /login with your credentials.
+Upload Files: Go to /upload and upload images or PDFs (max 16MB).
+Manage Files: On / (home), view, download, or delete files.
+Search: Use /search to find files by name.
+Forgot Password: Visit /forgot-password for OTP-based reset.
+
+Deployment
+This app is deployed on Render.com. Follow these steps to deploy your own instance:
+
+Push to GitHub: Ensure your code is in a GitHub repository.
+Create Web Service on Render:
+
+Connect GitHub, select your repo.
+Name: e.g., "file-manager".
+Runtime: Python.
+Build Command: pip install -r requirements.txt.
+Start Command: gunicorn app:app.
+Add environment variables (as above) in Render dashboard.
+
+
+Deploy: Click "Create Web Service" and wait for the build to complete.
+Access: Use the provided URL (e.g., https://file-manager.onrender.com).
+
+File Upload & Management System/
+├── app.py            # Main Flask application
+├── requirements.txt  # Python dependencies
+├── .env             # Environment variables (not in Git)
+├── .gitignore        # Ignored files
+├── templates/        # HTML templates
+│   ├── base.html     # Base layout
+│   ├── home.html     # Dashboard
+│   ├── login.html    # Login page
+│   ├── signup.html   # Signup page
+│   ├── upload.html   # Upload form
+│   ├── search.html   # Search page
+│   ├── forgot_password.html  # Forgot password
+│   └── reset_password.html   # Reset password
+├── uploads/          # File storage (auto-created on deploy)
+└── static/           # Optional CSS/JS (if added)
+
+Contact
+
+Author: Rajneesh Dubey
+Email: itsrajneeshdubey@gmail.com

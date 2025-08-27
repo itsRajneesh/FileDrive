@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Files - File Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card auth-card">
+            <div class="card-header">
+                <h3 class="fw-bold mb-0"><i class="bi bi-search me-2"></i>Search Your Files</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" class="mb-4">
+                    {{ form.hidden_tag() }}
+                    <div class="input-group">
+                        {{ form.query(class="form-control form-control-lg", placeholder="Enter filename to search...") }}
+                        {{ form.submit(class="btn btn-primary px-4") }}
+                    </div>
+                </form>
+
+                {% if files is defined and files %}
+                    <h4 class="mb-3">Search Results:</h4>
+                    <ul class="list-group">
+                        {% for file in files %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                {% if 'pdf' in file.file_type %}
+                                    <i class="bi bi-file-earmark-pdf-fill file-icon icon-pdf"></i>
+                                {% else %}
+                                    <i class="bi bi-file-earmark-image-fill file-icon icon-img"></i>
+                                {% endif %}
+                                <span class="fw-medium">{{ file.original_filename }}</span>
+                                <small class="text-muted ms-2">({{ "%.2f"|format(file.file_size) }} MB)</small>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('download', filename=file.filename) }}" class="btn btn-sm btn-outline-primary" title="Download"><i class="bi bi-download"></i></a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% elif request.method == 'POST' %}
+                    <p class="text-center text-muted mt-4">No files found matching your query.</p>
+                {% else %}
+                     <p class="text-center text-muted mt-4">Enter a query to search for your files.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

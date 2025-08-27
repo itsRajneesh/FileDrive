@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - File Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card auth-card">
+            <div class="card-header text-center">
+                <h3 class="fw-bold mb-0"><i class="bi bi-person-plus-fill me-2"></i>Create Account</h3>
+                <p class="text-muted mb-0">Join our file management platform</p>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                            {{ form.username(class="form-control", placeholder="Choose a unique username") }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+                            {{ form.email(class="form-control", placeholder="you@example.com") }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                            {{ form.password(class="form-control", placeholder="Create a strong password") }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.confirm_password.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                            {{ form.confirm_password(class="form-control", placeholder="Confirm your password") }}
+                        </div>
+                    </div>
+                    <div class="d-grid mt-4">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+                <hr class="my-3">
+                <p class="mb-0 text-center text-muted">Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

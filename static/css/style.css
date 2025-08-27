@@ -1,0 +1,124 @@
+/* static/css/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #0d6efd;
+    --dark-color: #212529;
+    --body-bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --card-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.07);
+    --border-radius: 0.5rem;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--body-bg);
+    color: #495057;
+}
+
+/* --- Animations --- */
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- Navbar --- */
+.navbar-brand i {
+    color: var(--primary-color);
+}
+
+/* --- Authentication & Form Cards --- */
+.auth-card {
+    background-color: var(--card-bg);
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden; /* Ensures content respects border-radius */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.auth-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.1);
+}
+
+.auth-card .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1.5rem;
+}
+
+.auth-card .card-body {
+    padding: 2rem;
+}
+
+.input-group-text {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: var(--primary-color);
+}
+
+/* --- Buttons --- */
+.btn-primary {
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+}
+
+/* --- Home Dashboard --- */
+.dashboard-header {
+    padding: 2rem;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #eef5ff;
+    cursor: pointer;
+}
+
+.table {
+    border-radius: var(--border-radius);
+    overflow: hidden; /* Makes table respect border radius */
+    box-shadow: var(--card-shadow);
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.file-icon {
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+.icon-pdf { color: #dc3545; }
+.icon-img { color: #0dcaf0; }
+.icon-file { color: #6c757d; }
+
+/* --- Footer --- */
+.footer {
+    padding: 1.5rem 0;
+    color: #6c757d;
+    font-size: 0.9em;
+    border-top: 1px solid #e9ecef;
+}
