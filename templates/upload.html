@@ -7,15 +7,15 @@
     <div class="col-md-8 col-lg-6">
         <div class="card auth-card">
             <div class="card-header text-center">
-                <h3 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Upload a New File</h3>
-                <p class="text-muted mb-0">Max file size: 20 MB. Allowed types: Images, PDF.</p>
+                <h3 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Upload New Files</h3>
+                <p class="text-muted mb-0">Max file size: 20 MB per file. Allowed types: Images, PDF. Select multiple files using Ctrl+Click or drag-drop.</p>
             </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
                         {{ form.file.label(class="form-label") }}
-                        {{ form.file(class="form-control form-control-lg") }}
+                        {{ form.file(class="form-control form-control-lg", **{'multiple': True}) }} <!-- Added multiple attribute -->
                     </div>
                     <div class="d-grid mt-4">
                         {{ form.submit(class="btn btn-primary btn-lg") }}

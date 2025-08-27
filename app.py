@@ -11,7 +11,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 from dotenv import load_dotenv
 import os
 import bcrypt
-import datetime # Make sure datetime is imported
+import datetime
 import time
 import random
 from pytz import timezone
@@ -23,7 +23,7 @@ from flask_mail import Mail, Message
 import smtplib
 from urllib.parse import quote_plus
 
-# load .env
+# Load .env
 load_dotenv()
 
 app = Flask(__name__)
@@ -67,9 +67,10 @@ UPLOAD_FOLDER = 'uploads'
 app.config['UPLOADED_FILES_DEST'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
-ALLOWED_EXTENSIONS = IMAGES + ('pdf',)
+ALLOWED_EXTENSIONS = IMAGES + ('pdf',)  # IMAGES includes .jpg, .jpeg, .png, .gif
 fileset = UploadSet('files', ALLOWED_EXTENSIONS)
 configure_uploads(app, fileset)
+
 
 # ADDED: Context processor to inject 'now' into all templates
 @app.context_processor
@@ -90,7 +91,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Login')
 
 class UploadForm(FlaskForm):
-    file = FileField('Upload File (PDF/Image)', validators=[DataRequired()])
+    file = FileField('Upload Files (PDF/Image)', validators=[DataRequired()], render_kw={"multiple": True})
     submit = SubmitField('Upload')
 
 class SearchForm(FlaskForm):
@@ -111,7 +112,7 @@ class ResetPasswordForm(FlaskForm):
 @app.errorhandler(ServerSelectionTimeoutError)
 def handle_database_error(error):
     flash('Unable to connect to the database. Please check your network.', 'danger')
-    return render_template('login.html', form=LoginForm()) # CHANGED: Render login page on db error
+    return render_template('login.html', form=LoginForm())
 
 @app.errorhandler(RequestEntityTooLarge)
 def handle_file_too_large(e):
@@ -125,20 +126,17 @@ def handle_file_too_large(e):
 def home():
     if db is None:
         flash('Database unavailable.', 'danger')
-        return render_template('login.html', form=LoginForm()) # CHANGED: Render login page on db error
-        
+        return render_template('login.html', form=LoginForm())
     if 'username' in session:
         uploaded_files = list(files.find({'username': session['username']}).sort('upload_date', -1))
         return render_template('home.html', username=session['username'], files=uploaded_files)
-    
-    # CHANGED: More direct to redirect to login if not in session
     return redirect(url_for('login'))
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if db is None:
         flash('Database unavailable.', 'danger')
-        return redirect(url_for('signup')) # CHANGED: Redirect to self to show flash
+        return redirect(url_for('signup'))
     form = SignupForm()
     if form.validate_on_submit():
         username = form.username.data.strip()
@@ -159,7 +157,7 @@ def signup():
 def login():
     if db is None:
         flash('Database unavailable.', 'danger')
-        return redirect(url_for('login')) # CHANGED: Redirect to self to show flash
+        return redirect(url_for('login'))
     form = LoginForm()
     if form.validate_on_submit():
         username = form.username.data.strip()
@@ -190,34 +188,65 @@ def upload():
         return redirect(url_for('home'))
     form = UploadForm()
     if form.validate_on_submit():
-        filedata = form.file.data
-        orig_filename = secure_filename(filedata.filename)
-        unique_filename = f"{uuid.uuid4().hex}_{orig_filename}"
+        files_data = request.files.getlist('file')  # Get all uploaded files
+        successful_uploads = 0
+        failed_files = []
 
-        # File size (MB)
-        filedata.seek(0, os.SEEK_END)
-        file_size_mb = round(filedata.tell() / (1024 * 1024), 2)
-        filedata.seek(0)
+        print(f"Received files: {len(files_data)}")  # Debug: Check how many files received
+        for i, filedata in enumerate(files_data):
+            if filedata and filedata.filename:  # Check if file exists and has a name
+                orig_filename = secure_filename(filedata.filename)
+                unique_filename = f"{uuid.uuid4().hex}_{orig_filename}"
 
-        file_ext = os.path.splitext(orig_filename)[1].lower()
-        fileset.save(filedata, name=unique_filename)
+                # File size (MB)
+                filedata.seek(0, os.SEEK_END)
+                file_size_mb = round(filedata.tell() / (1024 * 1024), 2)
+                filedata.seek(0)
 
-        ist = timezone('Asia/Kolkata')
-        upload_time_ist = datetime.datetime.now(ist)
-        upload_time_utc = datetime.datetime.utcnow()
-        upload_date_str = upload_time_ist.strftime('%Y-%m-%d %I:%M:%S %p IST')
+                file_ext = os.path.splitext(orig_filename)[1].lower()  # Ensure lowercase
+                if not file_ext or file_ext[1:] not in {ext.lstrip('.') for ext in ALLOWED_EXTENSIONS}:  # Check extension properly
+                    failed_files.append(f"{orig_filename} (Unsupported file type: {file_ext})")
+                    print(f"File {i+1} failed: Unsupported type {file_ext}")  # Debug
+                    continue
 
-        files.insert_one({
-            'username': session['username'],
-            'filename': unique_filename,
-            'original_filename': orig_filename,
-            'file_size': file_size_mb,
-            'file_type': file_ext,
-            'upload_date': upload_time_utc,
-            'upload_date_str': upload_date_str,
-            'download_count': 0
-        })
-        flash(f'File "{orig_filename}" uploaded successfully ({file_size_mb:.2f} MB)!', 'success')
+                try:
+                    fileset.save(filedata, folder=UPLOAD_FOLDER, name=unique_filename)
+                    print(f"File {i+1} saved: {unique_filename}")  # Debug
+                except Exception as e:
+                    failed_files.append(f"{orig_filename} (Error: {str(e)})")
+                    print(f"File {i+1} failed: {str(e)}")  # Debug
+                    continue
+
+                ist = timezone('Asia/Kolkata')
+                upload_time_ist = datetime.datetime.now(ist)
+                upload_time_utc = datetime.datetime.utcnow()
+                upload_date_str = upload_time_ist.strftime('%Y-%m-%d %I:%M:%S %p IST')
+
+                files.insert_one({
+                    'username': session['username'],
+                    'filename': unique_filename,
+                    'original_filename': orig_filename,
+                    'file_size': file_size_mb,
+                    'file_type': file_ext,
+                    'upload_date': upload_time_utc,
+                    'upload_date_str': upload_date_str,
+                    'download_count': 0
+                })
+                successful_uploads += 1
+                print(f"File {i+1} uploaded to DB: {orig_filename}")  # Debug
+
+        # Consolidated message based on upload result
+        if successful_uploads == 0:
+            flash('No files were uploaded successfully. Please check file types or try again.', 'danger')
+            if failed_files:
+                flash('Failed files: ' + ', '.join(failed_files), 'danger')
+        elif successful_uploads == len(files_data):
+            flash(f'All {successful_uploads} files uploaded successfully!', 'success')
+        else:
+            flash(f'{successful_uploads} out of {len(files_data)} files uploaded successfully.', 'success')
+            if failed_files:
+                flash('Failed files: ' + ', '.join(failed_files), 'warning')
+
         return redirect(url_for('home'))
     return render_template('upload.html', form=form)
 
@@ -281,7 +310,7 @@ def search():
         flash('Please log in first!', 'danger')
         return redirect(url_for('login'))
     form = SearchForm()
-    uploaded_files = [] # Initialize as empty
+    uploaded_files = []  # Initialize as empty
     if form.validate_on_submit():
         query = form.query.data
         cursor = files.find({
@@ -296,8 +325,6 @@ def search():
             flash(f'No files found matching "{query}".', 'danger')
         else:
             flash(f'Found {len(uploaded_files)} files matching "{query}".', 'success')
-    
-    # CHANGED: Simplified logic - no need for an else block to fetch all files.
     return render_template('search.html', form=form, files=uploaded_files)
 
 # -------------------- Forgot Password Route --------------------
