@@ -1,4 +1,3 @@
-# app.py
 from flask import (
     Flask, render_template, request, redirect, url_for, flash,
     session, send_from_directory, abort
@@ -278,7 +277,9 @@ def download(filename):
     print(f"Attempting to download from: {file_path}")  # Debug
     if not os.path.exists(file_path):
         print(f"File not found at: {file_path}. Directory contents: {os.listdir(upload_dir) if os.path.exists(upload_dir) else 'Directory not found'}")  # Detailed debug
-        flash('File missing on server! Please re-upload the file or check local uploads folder.', 'danger')
+        # ADDED: Render-specific note
+        print("Note: On Render, files may be lost after app restart due to ephemeral storage.")
+        flash('File missing on server! Please re-upload the file or check local uploads folder. Note: Files may be temporary on this server.', 'danger')
         return redirect(url_for('home'))
 
     return send_from_directory(upload_dir, filename, as_attachment=True)
