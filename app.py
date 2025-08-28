@@ -21,6 +21,8 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from flask_mail import Mail, Message
 import smtplib
 from urllib.parse import quote_plus
+import boto3
+from botocore.exceptions import ClientError
 
 # Load .env
 load_dotenv()
@@ -34,7 +36,6 @@ app.config['DEBUG'] = True
 # -------------------- MongoDB Setup --------------------
 db = None
 try:
-    # Encode username & password
     username = quote_plus(os.getenv('DB_USER'))
     password = quote_plus(os.getenv('DB_PASS'))
     cluster = os.getenv('DB_CLUSTER')
@@ -69,6 +70,18 @@ app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 ALLOWED_EXTENSIONS = IMAGES + ('pdf',)  # IMAGES includes .jpg, .jpeg, .png, .gif
 fileset = UploadSet('files', ALLOWED_EXTENSIONS)
 configure_uploads(app, fileset)
+
+# -------------------- S3 Config --------------------
+S3_BUCKET = os.getenv('S3_BUCKET_NAME')
+S3_REGION = os.getenv('S3_REGION', 'eu-north-1')  # Default to eu-north-1 if not set
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+    region_name=S3_REGION
+)
+
+use_s3 = os.getenv('AWS_ACCESS_KEY_ID') and os.getenv('AWS_SECRET_ACCESS_KEY') and S3_BUCKET  # Check if S3 is configured
 
 # ADDED: Context processor to inject 'now' into all templates
 @app.context_processor
@@ -208,15 +221,19 @@ def upload():
                     continue
 
                 try:
-                    fileset.save(filedata, folder=UPLOAD_FOLDER, name=unique_filename)
-                    saved_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-                    if os.path.exists(saved_path):
-                        file_size_on_disk = os.path.getsize(saved_path)
-                        with open(saved_path, 'rb') as f:
-                            content = f.read(10)  # Read first 10 bytes to verify
-                        print(f"File {i+1} saved successfully at: {saved_path} (Size: {file_size_on_disk} bytes, Content preview: {content.hex()})")  # Detailed debug
+                    if use_s3:
+                        # Upload to S3
+                        s3_client.upload_fileobj(filedata, S3_BUCKET, unique_filename)
+                        print(f"File {i+1} saved to S3: {unique_filename}")  # Debug
                     else:
-                        print(f"File {i+1} save failed: File not found at {saved_path} after save attempt")  # Debug
+                        # Local save
+                        fileset.save(filedata, folder=UPLOAD_FOLDER, name=unique_filename)
+                        saved_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+                        if os.path.exists(saved_path):
+                            print(f"File {i+1} saved locally at: {saved_path}")  # Debug
+                        else:
+                            print(f"File {i+1} save failed: File not found at {saved_path}")
+                    successful_uploads += 1
                 except Exception as e:
                     failed_files.append(f"{orig_filename} (Error: {str(e)})")
                     print(f"File {i+1} failed: {str(e)}")
@@ -237,7 +254,6 @@ def upload():
                     'upload_date_str': upload_date_str,
                     'download_count': 0
                 })
-                successful_uploads += 1
                 print(f"File {i+1} uploaded to DB: {orig_filename} (DB Filename: {unique_filename})")
 
         if successful_uploads == 0:
@@ -275,9 +291,17 @@ def download(filename):
     upload_dir = app.config.get('UPLOADED_FILES_DEST', 'uploads')
     file_path = os.path.join(upload_dir, filename)
     print(f"Attempting to download from: {file_path}")  # Debug
-    if not os.path.exists(file_path):
+    if use_s3:
+        try:
+            # Download from S3
+            s3_client.download_file(S3_BUCKET, filename, file_path)
+            print(f"File downloaded from S3 to {file_path}")
+        except ClientError as e:
+            print(f"S3 download failed: {str(e)}")
+            flash('File missing on server! Please re-upload the file.', 'danger')
+            return redirect(url_for('home'))
+    elif not os.path.exists(file_path):
         print(f"File not found at: {file_path}. Directory contents: {os.listdir(upload_dir) if os.path.exists(upload_dir) else 'Directory not found'}")  # Detailed debug
-        # ADDED: Render-specific note
         print("Note: On Render, files may be lost after app restart due to ephemeral storage.")
         flash('File missing on server! Please re-upload the file or check local uploads folder. Note: Files may be temporary on this server.', 'danger')
         return redirect(url_for('home'))
@@ -302,11 +326,18 @@ def delete(filename):
     files.delete_one({'_id': file_doc['_id']})
     upload_dir = app.config.get('UPLOADED_FILES_DEST', 'uploads')
     file_path = os.path.join(upload_dir, filename)
-    try:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-    except OSError as e:
-        print(f"Error removing file {file_path}: {e}")
+    if use_s3:
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET, Key=filename)
+            print(f"File {filename} deleted from S3")
+        except ClientError as e:
+            print(f"S3 delete failed: {str(e)}")
+    else:
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except OSError as e:
+            print(f"Error removing file {file_path}: {e}")
 
     flash('File deleted successfully!', 'success')
     return redirect(url_for('home'))
