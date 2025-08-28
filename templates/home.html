@@ -31,7 +31,7 @@
         <tbody>
             {% for file in files %}
             <tr>
-                <td>
+                <td class="file-name-cell">
                     {% if 'pdf' in file.file_type %}
                         <i class="bi bi-file-earmark-pdf-fill file-icon icon-pdf"></i>
                     {% elif 'jp' in file.file_type or 'png' in file.file_type or 'gif' in file.file_type %}

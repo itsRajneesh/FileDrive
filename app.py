@@ -63,14 +63,13 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('EMAIL_USER')
 mail = Mail(app)
 
 # -------------------- Upload Config --------------------
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.abspath('uploads')  # Explicit absolute path
 app.config['UPLOADED_FILES_DEST'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
 ALLOWED_EXTENSIONS = IMAGES + ('pdf',)  # IMAGES includes .jpg, .jpeg, .png, .gif
 fileset = UploadSet('files', ALLOWED_EXTENSIONS)
 configure_uploads(app, fileset)
-
 
 # ADDED: Context processor to inject 'now' into all templates
 @app.context_processor
@@ -192,9 +191,9 @@ def upload():
         successful_uploads = 0
         failed_files = []
 
-        print(f"Received files: {len(files_data)}")  # Debug: Check how many files received
+        print(f"Received files: {len(files_data)}")  # Debug
         for i, filedata in enumerate(files_data):
-            if filedata and filedata.filename:  # Check if file exists and has a name
+            if filedata and filedata.filename:
                 orig_filename = secure_filename(filedata.filename)
                 unique_filename = f"{uuid.uuid4().hex}_{orig_filename}"
 
@@ -203,18 +202,25 @@ def upload():
                 file_size_mb = round(filedata.tell() / (1024 * 1024), 2)
                 filedata.seek(0)
 
-                file_ext = os.path.splitext(orig_filename)[1].lower()  # Ensure lowercase
-                if not file_ext or file_ext[1:] not in {ext.lstrip('.') for ext in ALLOWED_EXTENSIONS}:  # Check extension properly
+                file_ext = os.path.splitext(orig_filename)[1].lower()
+                if not file_ext or file_ext[1:] not in {ext.lstrip('.') for ext in ALLOWED_EXTENSIONS}:
                     failed_files.append(f"{orig_filename} (Unsupported file type: {file_ext})")
-                    print(f"File {i+1} failed: Unsupported type {file_ext}")  # Debug
+                    print(f"File {i+1} failed: Unsupported type {file_ext}")
                     continue
 
                 try:
                     fileset.save(filedata, folder=UPLOAD_FOLDER, name=unique_filename)
-                    print(f"File {i+1} saved: {unique_filename}")  # Debug
+                    saved_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+                    if os.path.exists(saved_path):
+                        file_size_on_disk = os.path.getsize(saved_path)
+                        with open(saved_path, 'rb') as f:
+                            content = f.read(10)  # Read first 10 bytes to verify
+                        print(f"File {i+1} saved successfully at: {saved_path} (Size: {file_size_on_disk} bytes, Content preview: {content.hex()})")  # Detailed debug
+                    else:
+                        print(f"File {i+1} save failed: File not found at {saved_path} after save attempt")  # Debug
                 except Exception as e:
                     failed_files.append(f"{orig_filename} (Error: {str(e)})")
-                    print(f"File {i+1} failed: {str(e)}")  # Debug
+                    print(f"File {i+1} failed: {str(e)}")
                     continue
 
                 ist = timezone('Asia/Kolkata')
@@ -233,9 +239,8 @@ def upload():
                     'download_count': 0
                 })
                 successful_uploads += 1
-                print(f"File {i+1} uploaded to DB: {orig_filename}")  # Debug
+                print(f"File {i+1} uploaded to DB: {orig_filename} (DB Filename: {unique_filename})")
 
-        # Consolidated message based on upload result
         if successful_uploads == 0:
             flash('No files were uploaded successfully. Please check file types or try again.', 'danger')
             if failed_files:
@@ -265,13 +270,15 @@ def download(filename):
         flash('File not found or unauthorized!', 'danger')
         return redirect(url_for('home'))
 
-    # increment download count
+    # Increment download count
     files.update_one({'_id': file_doc['_id']}, {'$inc': {'download_count': 1}})
 
     upload_dir = app.config.get('UPLOADED_FILES_DEST', 'uploads')
     file_path = os.path.join(upload_dir, filename)
+    print(f"Attempting to download from: {file_path}")  # Debug
     if not os.path.exists(file_path):
-        flash('File missing on server!', 'danger')
+        print(f"File not found at: {file_path}. Directory contents: {os.listdir(upload_dir) if os.path.exists(upload_dir) else 'Directory not found'}")  # Detailed debug
+        flash('File missing on server! Please re-upload the file or check local uploads folder.', 'danger')
         return redirect(url_for('home'))
 
     return send_from_directory(upload_dir, filename, as_attachment=True)
